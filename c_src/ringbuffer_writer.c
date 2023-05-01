@@ -47,7 +47,7 @@ int main(int argc, char **argv){
         goto err;
     }
     char *filename = argv[1];
-    ring = init_ringbuffer(size,filename);
+    ring = init_ringbuffer(size,filename,'w');
     if(ring == NULL){
         sprintf(err_msg, "Unexpected error: Could not create ringbuffer");
         goto err;
