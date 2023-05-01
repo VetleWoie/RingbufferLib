@@ -25,6 +25,12 @@ static PyMethodDef Ringbuffer_methods[] = {
     {"read", (PyCFunction) py_ringbuffer_read, METH_VARARGS,
      "Read bytes from ringbuffer into new numpy array of specified type"
     },
+    {"read_copy", (PyCFunction) py_ringbuffer_read_copy, METH_VARARGS,
+     "Read bytes from ringbuffer into specified numpy array"
+    },
+    {"copy_stdin", (PyCFunction) ringbuffer_copy_stdin, METH_VARARGS,
+     "Read bytes from stdin and write to ringbuffer"
+    },
     {NULL}  /* Sentinel */
 };
 
@@ -120,7 +126,7 @@ static PyObject *py_ringbuffer_read(RingbufferObject *self, PyObject *args){
     }
     
     int size_read = num * type->elsize;
-    printf("num: %d, size: %lu, size_read: %d\n", num, type->elsize, size_read);
+    printf("num: %d, size: %d, size_read: %d\n", num, type->elsize, size_read);
     char *buf = malloc(size_read);
     ringbuffer_read(self->ringbuffer, buf, size_read);
 
@@ -145,8 +151,61 @@ static PyObject *py_ringbuffer_write(RingbufferObject *self, PyObject *args){
 Read bytes from ringbuffer into provided numpy array
 */
 static PyObject *py_ringbuffer_read_copy(RingbufferObject *self, PyObject *args){
+    PyArrayObject *arr;
+    PyArray_Descr *descr;
+    if (!PyArg_ParseTuple(args, "O!",&PyArray_Type, &arr))
+        return NULL;
+    
+    if(PyArray_NDIM(arr) > 1){
+        PyErr_SetString(PyExc_ValueError,"Array must be one dimensional");
+        return NULL;
+    }
+
+    descr = PyArray_DESCR(arr);
+
+    npy_intp num = PyArray_DIM(arr, 0);
+    int size_read = num * descr->elsize;
+
+    size_read = PyArray_NBYTES(arr);
+    char *buf = (char *) PyArray_DATA(arr);
+    ringbuffer_read(self->ringbuffer, buf, size_read);
+
     Py_RETURN_NONE; 
 }
 static PyObject *ringbuffer_copy_stdin(RingbufferObject *self, PyObject *args){
+    char err_msg[50];
+    char *buf;
+    u_int32_t max_read;
+
+    if (!PyArg_ParseTuple(args, "i",&max_read))
+        return NULL;
+
+    //Reopen STDIN as binary stream
+    if(freopen(NULL, "rb", stdin) == NULL){
+        sprintf(err_msg, "Could not reopen stdin");
+
+        goto err;
+    };
+
+    buf = (char *) malloc(max_read);
+    if(buf == NULL){
+        return NULL;
+    }
+    //Start reading stdin
+    while(1){
+        ssize_t bytes_read = read(STDIN_FILENO,buf,max_read);
+        if(bytes_read < 0){
+            sprintf(err_msg, "Could not read stdin");
+            goto err;
+        }else if(buf[bytes_read-1] == EOF){
+            printf("Got EOF shutting down\n");
+            break;
+        }
+        ringbuffer_write(self->ringbuffer, buf, bytes_read);
+    }
+
     Py_RETURN_NONE; 
+    err:
+        PyErr_SetString(PyExc_EnvironmentError,err_msg);
+        return NULL;
 }
