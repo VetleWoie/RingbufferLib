@@ -17,7 +17,7 @@ struct ringbuffer{
 
 typedef struct ringbuffer ringbuffer_t;
 
-ringbuffer_t *init_ringbuffer(int maxSize, char *path){
+ringbuffer_t *init_ringbuffer(int maxSize, char *path, char *mode){
     ringbuffer_t *ringbuffer;
 
     //Allocate new ringbuffer
@@ -25,14 +25,17 @@ ringbuffer_t *init_ringbuffer(int maxSize, char *path){
     if(ringbuffer == NULL){
         return NULL;
     }
+
     ringbuffer->head = 0;
     ringbuffer->maxSize = maxSize;
     ringbuffer->path = path;
 
-    //Allocate memory for the ringbuffer
-    ringbuffer->buf = calloc(1, maxSize);
-    if(ringbuffer->buf == NULL){
-        return NULL;
+    if(*mode == 'w'){
+        //Allocate memory for the ringbuffer
+        ringbuffer->buf = calloc(1, maxSize);
+        if(ringbuffer->buf == NULL){
+            return NULL;
+        }
     }
 
     //If path is NULL then we do not need create a file
@@ -44,12 +47,14 @@ ringbuffer_t *init_ringbuffer(int maxSize, char *path){
             return NULL;
         }
         //Fill the file up to maxsize with zeros
-        if(write(ringbuffer->fd,ringbuffer->buf,maxSize)<0){
+        if(*mode == 'w'){
+            if(write(ringbuffer->fd,ringbuffer->buf,maxSize)<0){
+                free(ringbuffer->buf);
+                return NULL;
+            }
+            //We're gonna map our memory to the new file so now we doesn't need the memory we allocated earlier
             free(ringbuffer->buf);
-            return NULL;
         }
-        //We're gonna map our memory to the new file so now we doesn't need the memory we allocated earlier
-        free(ringbuffer->buf);
         //Map memory to file 
         ringbuffer->buf = mmap(NULL, maxSize, PROT_WRITE, MAP_SHARED, ringbuffer->fd,0);
         if(ringbuffer->buf == MAP_FAILED){
@@ -113,6 +118,6 @@ void ringbuffer_read(ringbuffer_t *ringbuffer, void *buf, size_t __n){
         ringbuffer->head = 0; 
         //Read remaining buffer data to the ring
         //Do this recursivley. PS: Might be faster to do it iterativley depending on the compiler.
-        ringbuffer_write(ringbuffer, curr_pos, __n-size_left);
+        ringbuffer_read(ringbuffer, curr_pos, __n-size_left);
     }
 }
