@@ -7,5 +7,15 @@ module1 = Extension('ringbuffer',
 
 setup (name = 'ringbuffer',
        version = '1.0',
-       description = 'C implemented ringbuffer for python'
-       ext_modules = [module1])
+       description = 'C implemented ringbuffer for python',
+       scripts=['scripts/read_stdin'],
+       install_requires=[
+            'numpy',
+            "humanfriendly"
+       ],
+       requires=[
+           "numpy",
+           "humanfriendly"
+       ],
+       ext_modules = [module1],
+)
