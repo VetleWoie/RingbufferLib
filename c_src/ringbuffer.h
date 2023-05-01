@@ -19,7 +19,7 @@ Initilizes a new ringbuffer.
 @Returns
     - NULL on failure, pointer to new ringbuffer on success
 */
-ringbuffer_t *init_ringbuffer(int maxSize, char *path);
+ringbuffer_t *init_ringbuffer(int maxSize, char *path, char *mode);
 
 /*
 Deallocates any memory used by the ringbuffer. If ringbuffer is mapped to a file it will not touch the 
