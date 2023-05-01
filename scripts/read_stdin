@@ -1,0 +1,30 @@
+#!/usr/bin/python3
+
+import ringbuffer as rb
+import humanfriendly as hf
+import argparse
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+                    prog='Ringbuffer read stdin',
+                    description='Reads bytes from stdin and copies them to a ringbuffer file.',
+                    epilog='Unsure what should be said here')
+    
+    parser.add_argument("-f","--filename",
+                        help="File to create ringbuffer in",
+                        required=True)
+    parser.add_argument("-rb","--ringbufferSize",
+                        help="Size of ringbuffer",
+                        required=True)
+    parser.add_argument("-rs","--readSize",
+                        help="Amount of bytes to read from stdin at a time",
+                        required=True)
+
+    args = parser.parse_args()
+
+    ringbuffer_size = hf.parse_size(args.ringbufferSize)
+    read_size = hf.parse_size(args.readSize)
+    filename = args.filename
+
+    ring = rb.Ringbuffer(ringbuffer_size, filename, 'w')
+    ring.copy_stdin(read_size)
