@@ -7,5 +7,5 @@ module1 = Extension('ringbuffer',
 
 setup (name = 'ringbuffer',
        version = '1.0',
-       description = 'This is a demo package',
+       description = 'C implemented ringbuffer for python'
        ext_modules = [module1])
