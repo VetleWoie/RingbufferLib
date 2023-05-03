@@ -86,6 +86,9 @@ void ringbuffer_write(ringbuffer_t *ringbuffer, const void *buf, size_t __n){
         //If its more space left than we need to write, then write and move head
         memcpy(curr_pos, buf, __n);
         ringbuffer->head += __n;
+        //Schedule a synchronization of the memory to the filesystem.
+        //TODO: Test this, especially the length flag. Might need to do the whole buffer.
+        msync(ringbuffer->buf, __n, MS_ASYNC);
     }else{
         //Write to end of ring
         memcpy(curr_pos, buf, size_left);
